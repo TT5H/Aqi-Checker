@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced AQI Checker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* General Styling */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #b2dfdb, #80cbc4);
+            color: #444;
+            transition: background 0.5s ease-in-out;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #333;
+            text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            padding: 25px;
+            background: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+            animation: fadeIn 0.6s ease;
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Form Styling */
+        .form-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .form-group input,
+        .form-group button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 1em;
+        }
+
+        .form-group button {
+            background-color: #218d4e;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .form-group button:hover {
+            background-color: #08802c;
+        }
+
+        /* AQI Badge Styling */
+        /* AQI Badge Styling */
+        .aqi-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            padding: 20px;
+            border-radius: 50%;
+            color: #fff;
+            font-weight: bold;
+            margin: 15px auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            width: 180px;
+            height: 180px;
+            position: relative;
+            background: linear-gradient(135deg, #ff758c, #ff7eb3);
+            text-align: center;
+        }
+
+        .aqi-icon {
+            font-size: 1.5em;
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+
+        /* AQI Categories */
+        .good {
+            background-color: #4caf50;
+        }
+
+        .moderate {
+            background-color: #ffc107;
+        }
+
+        .unhealthy-sensitive {
+            background-color: #ff9800;
+        }
+
+        .unhealthy {
+            background-color: #f44336;
+        }
+
+        .very-unhealthy {
+            background-color: #9c27b0;
+        }
+
+        .hazardous {
+            background-color: #7e57c2;
+        }
+
+        /* Card Styles */
+        .card {
+            background: #fafafa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Recommendations */
+        .recommendations {
+            font-size: 1.2em;
+            margin-top: 15px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .recommendations i {
+            font-size: 1.5em;
+            margin-right: 10px;
+            color: #444;
+        }
+
+        /* Table Styles */
+        .historical-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .historical-table th,
+        .historical-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .historical-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        .historical-table td[data-value="high"] {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .historical-table td[data-value="low"] {
+            background-color: #e8f5e9;
+            color: #388e3c;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>AQI Checker</h1>
+    <div class="container">
+        <div class="form-group">
+            <input type="text" id="location" placeholder="Enter City (e.g., Lahore)" />
+            <button onclick="fetchAQIData()">Check AQI</button>
+        </div>
+        <div id="results">
+            <p>Enter a city to see its current AQI and recommendations.</p>
+        </div>
+    </div>
+
+    <script>
+        async function fetchAQIData() {
+            const token = 'YOUR_API_KEY';
+            const city = document.getElementById("location").value || "lahore";
+            const url = `https://api.waqi.info/feed/${city}/?token=${token}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.status === "ok") {
+                    const aqi = data.data.aqi;
+                    const mainPollutant = data.data.dominentpol;
+                    const pm25 = data.data.iaqi.pm25 ? data.data.iaqi.pm25.v : "N/A";
+                    const recommendations = getAQIRecommendations(aqi);
+                    const iconClass = recommendations.icon;
+
+                    const historicalRows = data.data.forecast.daily.pm25.map(day => {
+                        const avgClass = day.avg > 100 ? "high" : "low";
+                        return `
+                            <tr>
+                                <td>${day.day}</td>
+                                <td class="${avgClass}" data-value="${avgClass}">${day.avg} µg/m³</td>
+                                <td>${day.max} µg/m³</td>
+                                <td>${day.min} µg/m³</td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                    document.getElementById("results").innerHTML = `
+                        <div class="aqi-badge ${getAQICategory(aqi).class}">
+                            <i class="${iconClass} aqi-icon"></i>
+                            <span>${aqi} US AQI</span>
+                        </div>
+                        <div class="card">
+                            <h3>Location Information</h3>
+                            <p><strong>City:</strong> ${data.data.city.name}</p>
+                            <p><strong>Main Pollutant:</strong> ${mainPollutant.toUpperCase()}</p>
+                            <p><strong>PM2.5 Level:</strong> ${pm25} µg/m³</p>
+                            <p><strong>Status:</strong> ${getAQICategory(aqi).status}</p>
+                        </div>
+                        <div class="recommendations">
+                            <i class="${iconClass}"></i>
+                            <span>${recommendations.message}</span>
+                        </div>
+                        <div class="card historical-data">
+                            <h3>Historical Data (PM2.5)</h3>
+                            <table class="historical-table">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Average (µg/m³)</th>
+                                    <th>Max (µg/m³)</th>
+                                    <th>Min (µg/m³)</th>
+                                </tr>
+                                ${historicalRows}
+                            </table>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById("results").innerHTML = "<p>Data not available for this location.</p>";
+                }
+            } catch (error) {
+                console.error("Error fetching AQI data:", error);
+                document.getElementById("results").innerHTML = "<p>Error fetching data.</p>";
+            }
+        }
+
+        function getAQICategory(aqi) {
+            if (aqi <= 50) return { class: "good", status: "Good" };
+            if (aqi <= 100) return { class: "moderate", status: "Moderate" };
+            if (aqi <= 150) return { class: "unhealthy-sensitive", status: "Unhealthy for Sensitive Groups" };
+            if (aqi <= 200) return { class: "unhealthy", status: "Unhealthy" };
+            if (aqi <= 300) return { class: "very-unhealthy", status: "Very Unhealthy" };
+            return { class: "hazardous", status: "Hazardous" };
+        }
+
+        function getAQIRecommendations(aqi) {
+            if (aqi <= 50) return { message: "Great day for outdoor activities!", icon: "fas fa-smile" };
+            if (aqi <= 100) return { message: "Moderate air quality. Sensitive groups, take caution outdoors.", icon: "fas fa-walking" };
+            if (aqi <= 150) return { message: "Unhealthy for sensitive groups. Avoid prolonged outdoor exertion.", icon: "fas fa-exclamation-triangle" };
+            if (aqi <= 200) return { message: "Unhealthy. It's best to stay indoors.", icon: "fas fa-house-user" };
+            if (aqi <= 300) return { message: "Very unhealthy air. Limit outdoor activities.", icon: "fas fa-skull-crossbones" };
+            return { message: "Hazardous! Stay indoors and close windows.", icon: "fas fa-radiation" };
+        }
+    </script>
+</body>
+
+</html>
