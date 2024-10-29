@@ -5,6 +5,10 @@ AQI Checker is a web application that allows users to view the current Air Quali
 along with recommendations for outdoor activities based on air quality. The app fetches live data from the World Air
 Quality Index (WAQI) API.
 
+<div align="center">
+    <img src="https://i.imgur.com/phlsrnK.png" alt="AQI Checker Screenshot">
+</div>
+
 ## Features
 
 - Displays current AQI and main pollutant information for a location
